@@ -1,10 +1,10 @@
 function elevation=Wave_JONSWAP(Height,T,Gamma)
 % Parameters for the JONSWAP spectrum
 g = 9.81;        % Gravitational acceleration (m/s^2)
-H_s = 4;         % Significant wave height (m)
-T_z = 8;         % Zero-crossing period (s)
+H_s = Height;         % Significant wave height (m)
+T_z = T;         % Zero-crossing period (s)
 alpha = 0.0081;  % JONSWAP spectrum constant for H_s
-gamma = 3.3;     % Peak enhancement factor (default 3.3)
+gamma = Gamma;     % Peak enhancement factor (default 3.3)
 sigma = 0.07;    % Spectral width
 omega_p = 2*pi/T_z;  % Peak angular frequency
 
