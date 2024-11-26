@@ -95,34 +95,28 @@ for k=1:num_steps-1
             end
         end
    %Generat Y
-   Y(k,:)=2*u_temp*C_X*X(:,k)+R*u_temp.^2;
+   Y(k,:)=(2*u_temp*C_X*X(:,k)+R*u_temp^2);
 end
  
 %fprintf("Output: %s\n", mat2str(Y));
 
 %RLS function
-for k = 2:N
+for k = 1:N
     % Create regression vector Z_k
     Z_k = Z(:,k);
     
     % Update P_k+1
-    K_k = (P * Z_k) / (lambda + Z_k' * P * Z_k); % Kalman gain
+    K_k = (P * Z_k) *inv(lambda + Z_k' * P * Z_k); % Kalman gain
     P = (P / lambda) - K_k * Z_k' * P / lambda;
     
     % Update Theta_k+1
-   
     prediction_error = Y(k) - Z_k' * Theta;
     Theta = Theta + P * Z_k * prediction_error;
-    if Theta
-      OO=1;
-    else
-        disp(P)
-    end
-
     % Store results
     Theta_history(k, :) = Theta';
     error_history(k) = prediction_error;
 end
+disp(error_history)
 
 %Update M and F
 order=0;
@@ -149,55 +143,55 @@ end
 %Method 1 :use command idare to solve DARE
 %[H,-F,L]=idare(A,B,0,R,C_X',eye(n_x+n_p));
 
-
-
-%Method 2
-tolerance = 1e-6;                      % Convergence threshold
-max_iter = 1000;                       % Maximum number of iterations
-% Initialization
-H = zeros(n_x+n_p);                   % Initial guess for H
-H_prev = H + 2;                       % Ensure the loop starts
-iter = 0;
- 
-% Iterative computation
-while norm(H - H_prev, 'fro') > tolerance && iter < max_iter
-     H_prev = H;                        % Save previous H
-     G = C_X + B' * H_prev * A;         % Gain term
-     S = R + B' * H_prev * B;           % Modified cost
-     H = A' * H_prev * A - G' * (S \ G); % Update H
-     iter = iter + 1;                   % Increment iteration counter
-end
-F=-inv(R+B'*H*B)*(C_X+B'*H*A);
- % Check for convergence
-if iter >= max_iter
-     disp('Warning: Iterative solution did not converge.');
- else
-     disp(['Converged in ', num2str(iter), ' iterations.','F=',num2str(F)]);
- end
+% %Method 2
+% tolerance = 1e-6;                      % Convergence threshold
+% max_iter = 1000;                       % Maximum number of iterations
+% % Initialization
+% H = zeros(n_x+n_p);                   % Initial guess for H
+% H_prev = H + 2;                       % Ensure the loop starts
+% iter = 0;
 % 
-% % Output solution
-% disp('Solution H:');
-% disp(H);
-%Method 3
-%Define initial F and H
-H=eye(n_x+n_p);
-H=[-2.4677    0.0006    0.0001    0.0004; 0.0006   -0.2078   -0.0001   -0.0001;0.0001   -0.0001   -0.0000   -0.0000;0.0004   -0.0001   -0.0000   -0.0000]*1e3;
-H_prev=H+2;
-F=[10 -1 3 5];
-%F=[82.2145  -66.0540    0.0153    0.0549];
+% % Iterative computation
+% while norm(H - H_prev, 'fro') > tolerance && iter < max_iter
+%      H_prev = H;                        % Save previous H
+%      G = C_X + B' * H_prev * A;         % Gain term
+%      S = R + B' * H_prev * B;           % Modified cost
+%      H = A' * H_prev * A - G' * (S \ G); % Update H
+%      iter = iter + 1;                   % Increment iteration counter
+% end
+% F=-inv(R+B'*H*B)*(C_X+B'*H*A);
+%  % Check for convergence
+% if iter >= max_iter
+%      disp('Warning: Iterative solution did not converge.');
+%  else
+%      disp(['Converged in ', num2str(iter), ' iterations.','F=',num2str(F)]);
+%  end
+% % 
+% % % Output solution
+% % disp('Solution H:');
+% % disp(H);
 
-F_prev=F+2;
-%F=[82.2149  -66.0544    0.0153    0.0549];
-tolerance=1e-4;
-max_iter=1000;
-iter=1;
-while norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance &&iter<max_iter
-    H_prev=H;
-    F_prev=F;
-    H=(A+B*F_prev)'*H_prev*(A+B*F_prev)+F_prev'*R*F_prev+2*F_prev'*C_X;
-    F=-inv(R+B'*H*B)*(C_X+B'*H*A);
-    iter=iter+1;
-end
+
+% %Method 3
+% %Define initial F and H
+% H=eye(n_x+n_p);
+% H=[-2.4677    0.0006    0.0001    0.0004; 0.0006   -0.2078   -0.0001   -0.0001;0.0001   -0.0001   -0.0000   -0.0000;0.0004   -0.0001   -0.0000   -0.0000]*1e3;
+% H_prev=H+2;
+% F=[10 -1 3 5];
+% %F=[82.2145  -66.0540    0.0153    0.0549];
+% 
+% F_prev=F+2;
+% %F=[82.2149  -66.0544    0.0153    0.0549];
+% tolerance=1e-4;
+% max_iter=1000;
+% iter=1;
+% while norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance &&iter<max_iter
+%     H_prev=H;
+%     F_prev=F;
+%     H=(A+B*F_prev)'*H_prev*(A+B*F_prev)+F_prev'*R*F_prev+2*F_prev'*C_X;
+%     F=-inv(R+B'*H*B)*(C_X+B'*H*A);
+%     iter=iter+1;
+% end
 
 
 
