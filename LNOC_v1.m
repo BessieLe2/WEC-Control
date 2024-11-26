@@ -13,6 +13,7 @@ C_e=[0 0 0 0 1];
 n_e=size(A_e,1);
 
 k_s=3866;
+
 m_s=242;
 m_a=83.5;
 m=m_a+m_s;
@@ -42,7 +43,8 @@ A = expm(A_c * T_s); % Calculate Ad using matrix exponential
 integral_Ac = inv(A_c) * (expm(A_c * T_s) - eye(size(A_c))); % Integral of exp(Ac*t) dt from 0 to T
 B_u = integral_Ac * B_uc; % Discretized input matrix for control input u
 B_w = integral_Ac * B_wc; % Discretized input matrix for disturbance input w
-
+%[A,B_u]=c2d(A_c,B_uc,T_s);
+rank(ctrb(A,B_u))
 % Simulation parameters
 num_steps = 500; % Number of simulation steps, Time=50s
 n=size(A,1);% Number of state
@@ -59,8 +61,8 @@ r=0.08;
 R_v=0.01;
 R_w=1;
 %Prediction time horizon
-n_p=30;%10,20,30
-
+n_p=5;%10,20,30
+t_p=n_p*T_s;
 
 %V=A^TVA+Q-(B_u^TVA+C_z)^T(r+B_u^TVB_u)^{-1}(B_u^TVA+C_z)
 [V,K1,L1,info]=idare(A,B_u,Q,r,C_z',eye(n));
