@@ -132,7 +132,7 @@ for p=1:l
     end
 end
 
-Muu=M(l,l)
+Muu=M(l,l);
 MuX=M(l,1:l-1);
 F=-inv(Muu)*MuX;
 %Update iterative order number
