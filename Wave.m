@@ -1,3 +1,6 @@
+clear all
+clc
+close all
 % Parameters
 Hs = 3;           % Significant wave height (meters)
 Tp = 5;           % Peak period (seconds)
