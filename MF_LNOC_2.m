@@ -7,6 +7,11 @@ B_r=[38.6 379 89];
 C_r=[0;0;1]';
 D_r=0;
 n_r=size(A_r,1);
+%Reduced-order model parameters
+A_init=[0.7726 0.1834;-2.1783 0.7614];
+B_u=[0.0588;0.5635]*10^(-3);
+B_w=B_u;
+C_z=[1,0];
 
 %Wave information:Height h, velocity v, force f
 %a significant wave height of 4 m, a peak period of 6 s, and a peakedness factor of 3.3.
@@ -91,7 +96,7 @@ for k=1:num_steps
 end
 Z=Z/norm(Z);%Normalize output Z
  
-P = eye(n_theta);       % Initial covariance matrix (identity matrix)
+P = 1000*eye(n_theta);       % Initial covariance matrix (identity matrix)
 Theta = zeros(n_theta, 1); % Initial parameter estimates
 
 %RLS function

@@ -8,7 +8,8 @@ A_init=[0.7726 0.1834;-2.1783 0.7614];
 B_u=[0.0588;0.5635]*10^(-3);
 B_w=B_u;
 C_z=[1,0];
-%rank(ctrb(A_init,B_u))
+ctrl=rank(ctrb(A_init,B_u));
+obs=rank(obsv(A_init,C_z));
 %Augmented system parameters
 n_x=size(A_init,1);
 n_p=2;%prediction length
@@ -18,7 +19,10 @@ I=ones(n_p-1);
 T=[zeros(n_p-1,1),I;0,zeros(1,n_p-1)];
 A=[A_init,B_w*D;zeros(n_p,n_x),T];
 B=[B_u;zeros(n_p,1)];
-%rank(ctrb(A, B)) 
+%%Assume output is heave velocity
+C=[0,1,zeros(1,n_p)];
+ctrl1=rank(ctrb(A,B));
+obs1=rank(obsv(A,C));
 %The wave excitation force is generated using a JONSWAP spectrum [45], with a significant wave high of 3 m,
 % a peak period of 5 s, and a peakedness parameter of 3.3.
 Height=3;
@@ -31,29 +35,16 @@ r=0.0011;
 t_s=0.5;
 %L=uC_xX+0.5Ru^2
 R=2*t_s*r+2*C_z*B_u;
-%R = 0.0011;
+R = 0.0011;
 C_X=[C_z*(A_init-eye(size(A_init))),C_z*B_w*D];
-
-
-num_steps=1000;%Simulations steps
-n_u=1;%Input number
-%Initialize xk, Xk and X_upper k+1
-X=zeros(n_x+n_p,num_steps);
-X_upper=zeros(n_x+n_p,num_steps+1);
-x=zeros(n_x,num_steps);
-u=zeros(n_u,num_steps);
-%Initialize M0 and F0
-M=zeros(n_x+n_p+1);
-F=zeros(1,n_x+n_p);
-M0=M+1;
-F0=F+1;
-tolerance=1e-6;
-max_iter=1000;
 
 %Method 1 :use command idare to solve DARE
 [H,K,L]=idare(A,B,0,R,C_X',eye(n_x+n_p));
 F=-K;
 
+
+tolerance=1e-6;
+max_iter=1000;
 % %Method 2
 % tolerance = 1e-6;                      % Convergence threshold
 % max_iter = 1000;                       % Maximum number of iterations
@@ -82,17 +73,16 @@ F=-K;
 % % disp('Solution H:');
 % % disp(H);
 
-
 % %Method 3
 % %Define initial F and H
 H=eye(n_x+n_p);
-% H=[-2.4677    0.0006    0.0001    0.0004; 0.0006   -0.2078   -0.0001   -0.0001;0.0001   -0.0001   -0.0000   -0.0000;0.0004   -0.0001   -0.0000   -0.0000]*1e3;
+H=[-2.4677    0.0006    0.0001    0.0004; 0.0006   -0.2078   -0.0001   -0.0001;0.0001   -0.0001   -0.0000   -0.0000;0.0004   -0.0001   -0.0000   -0.0000]*1e3;
 H_prev=H+2;
 F=[0 -1 0 0];
-% %F=[82.2145  -66.0540    0.0153    0.0549];
+F=[82.2145  -66.0540    0.0153    0.0549];
 F_prev=F+2;
 iter=1;
-while norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance &&iter<max_iter
+while (norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance )&&iter<max_iter
     H_prev=H;
     F_prev=F;
     H=(A+B*F_prev)'*H_prev*(A+B*F_prev)+F_prev'*R*F_prev+2*F_prev'*C_X;
@@ -100,6 +90,18 @@ while norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance &&iter<max
     iter=iter+1;
 end
 
+num_steps=1000;%Simulations steps
+n_u=1;%Input number
+%Initialize xk, Xk and X_upper k+1
+X=zeros(n_x+n_p,num_steps);
+X_upper=zeros(n_x+n_p,num_steps+1);
+x=zeros(n_x,num_steps);
+u=zeros(n_u,num_steps);
+%Initialize M0 and F0
+M=zeros(n_x+n_p+1);
+F=zeros(1,n_x+n_p);
+M0=M+1;
+F0=F+1;
 j=1;%Iterative order number
 l=n_x+n_p+1;
 %%Initialize RLS parameters
@@ -115,7 +117,7 @@ Theta = zeros(n_theta, 1); % Initial parameter estimates
 % Recursive Least Squares Implementation
 Theta_history = zeros(N, n_theta); % Store parameter estimates
 error_history = zeros(N, 1);       % Store errors
-while norm(M-M0,'fro')>tolerance || norm(F-F0,'fro')>tolerance&&j<max_iter
+while (norm(M-M0,'fro')>tolerance || norm(F-F0,'fro')>tolerance)&&j<max_iter
     M0=M;
     F0=F;
     %Generate random u at the first training epoch
@@ -168,7 +170,7 @@ for k = 1:N
     Theta_history(k, :) = Theta';
     error_history(k) = prediction_error;
 end
-disp(error_history)
+
 
 %Update M and F
 order=0;
@@ -183,7 +185,6 @@ for p=1:l
         end
     end
 end
-
 Muu=M(l,l);
 MuX=M(l,1:l-1);
 F=-inv(Muu)*MuX;
