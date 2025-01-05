@@ -20,7 +20,7 @@ T_s=0.1;
 n_p=50;%10,20,30
 t_p=n_p*T_s;
 % Simulation parameters
-num_steps = 500; % Number of simulation steps, Time=50s
+num_steps = 5000; % Number of simulation steps, Time=50s
 n=size(A,1);% Number of state
 n_u=1;%Number of control input
 x = zeros(n, num_steps); % Initialize state vector
@@ -54,7 +54,6 @@ C=eye(2);
 [P,K2,L2]=idare(A',C',Bw*Rw*Bw',Rv,zeros(n,2),eye(n));
 L=-P*C'*inv(C*P*C'+Rv*eye(2));
 x_corrected(:,1)=x(:,1);
-%%Assume observed state is velocity
 
 t=0:0.1:100;
 f=0.2;
@@ -62,36 +61,38 @@ zz=2.5*sin(2*pi*f*t);
 v=2.5*2*pi*f*cos(2*pi*f*t);
 %Initialize y
 y=zeros(2,num_steps);
-%y=2.5*2*pi*f*cos(2*pi*f*t);%% observed state
+
 % Run the simulation
 for k = 1:num_steps-1
     % ignore K_s*(phi^(n_p-1))*s_
     %u(:,k)=K_x*x(:,k)+K_s*(phi^(n_p-1))*s_+K_d*w(:,0:n_p);
-    %u(:,k)=K_x*x(:,k)+K_d*w_p;
-    u(:,k) = Kx*x_corrected(:,k)+Kd*w(k:k+n_p-1)';
+    u(:,k)=Kx*x(:,k)+Kd*w(k:k+n_p-1)';
+    %u(:,k) = Kx*x_corrected(:,k)+Kd*w(k:k+n_p-1)';
     %State update
     x(:, k+1) = A * x(:, k) + Bu * u(:,k) + Bw * w(k);
-    y(:,k+1)=C*x(:,k+1)+randn();
-    %Kalman Filter
-    x_corrected(:,k+1) = x(:,k+1)+L*(y(:,k+1)-C*x(:,k+1));
+    %y(:,k+1)=C*x(:,k+1)+randn();
+    %%Kalman Filter
+    %x_corrected(:,k+1) = x(:,k+1)+L*(y(:,k+1)-C*x(:,k+1));
 end
 % Output calculation
+x_corrected=x;
 z=Cz*x_corrected;
 %figure of wave elevation
 figure
-plot(w(1:1000));
+plot(w);
 title('Wave')
 xlabel('Timestep');
 ylabel('Wave elevation(m)')
+title('Wave')
 %figure of postion and velocity
 figure
 subplot(2,1,1)
-plot(x_corrected(1,:))
+plot(x(1,:))
 title('Heave positon')
 xlabel('Timestep')
 ylabel('Heave positon (m)')
 subplot(2,1,2)
-plot(x_corrected(2,:))
+plot(x(2,:))
 title('Heave velocity')
 xlabel('Timestep')
 ylabel('Heave velocity(k/m)')
@@ -111,16 +112,18 @@ figure
 plot(EIG)
 xlabel('n_p');
 ylabel('max eigenvalues')
-
+recordKs=[]
 for i=1:n_p-1
-    Coffiecient =Ks*(phi^i);
-    %eig(Coffiecient)
+    Coffiecient =Ks*(phi^i)
+ 
+
 end
 
 figure
-plot(Kd)
+plot(abs(Kd))
 xlabel('np');
 ylabel('Kd(i)')
+title('Kd')
 Energy=zeros(1,size(u,2));
 e=0;
 for k=1:size(u,2)

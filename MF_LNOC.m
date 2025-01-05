@@ -1,6 +1,6 @@
 clear all
 close all
-clc 
+ 
 % MF LNOC
 %%Simulation Case 1-With Full State Information
 %Reduced-order model parameters
@@ -34,7 +34,7 @@ Gamma=3.3;
 r=0.0011;
 t_s=0.5;
 %L=uC_xX+0.5Ru^2
-R=2*t_s*r+2*C_z*B_u;
+%R=2*t_s*r+2*C_z*B_u;
 R = 0.0011;
 C_X=[C_z*(A_init-eye(size(A_init))),C_z*B_w*D];
 
@@ -111,13 +111,13 @@ Z=zeros(n_theta,num_steps);%Initialize input Z
 Y=zeros(num_steps,1);%Initialize output Y
 N = 1000;                % Number of iterations (warming-up period)
 lambda = 0.98;          % Forgetting factor
-P = eye(n_theta);       % Initial covariance matrix (identity matrix)
+P = 0.99*eye(n_theta);       % Initial covariance matrix (identity matrix)
 Theta = zeros(n_theta, 1); % Initial parameter estimates
 
 % Recursive Least Squares Implementation
 Theta_history = zeros(N, n_theta); % Store parameter estimates
 error_history = zeros(N, 1);       % Store errors
-while (norm(M-M0,'fro')>tolerance || norm(F-F0,'fro')>tolerance)&&j<max_iter
+%while (norm(M-M0,'fro')>tolerance || norm(F-F0,'fro')>tolerance)&&j<max_iter
     M0=M;
     F0=F;
     %Generate random u at the first training epoch
@@ -130,15 +130,18 @@ for k=1:num_steps
     x(:,k+1)=A_init*x(:,k)+B_u*u(:,k)+B_w*Wave(k);
     X_upper(:,k+1)=[x(:,k+1);Wave(k+1:k+n_p-1)';0];
     %Generate Z
-    if j==1
-        u_temp=u_random(k);
-        z=[X(:,k);u_random(k)];
-        z_upper=[X_upper(:,k+1);u_random(k+1)];
-    else
-       u_temp=F0*X(:,k);
-       z=[X(:,k);F0*X(:,k)];
+%    if j==1
+%        u_temp=u_random(k);
+%        z=[X(:,k);u_random(k)];
+%        z_upper=[X_upper(:,k+1);u_random(k+1)];
+%    else
+%       u_temp=F0*X(:,k);
+%       z=[X(:,k);F0*X(:,k)];
+%       z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
+%    end 
+       u_temp=50*randn();
+       z=[X(:,k);u_temp];
        z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
-    end 
     %z=[X;FX],l=nx+np+1
     i=1;
         for p=1:l
@@ -150,7 +153,7 @@ for k=1:num_steps
    %Generat Y
    Y(k,:)=0.5*(2*u_temp*C_X*X(:,k)+R*u_temp^2);
 end
-Z = Z / norm(Z);%Normalize Z
+%Z = Z / norm(Z);%Normalize Z
 
 %fprintf("Output: %s\n", mat2str(Y));
 
@@ -187,10 +190,10 @@ for p=1:l
 end
 Muu=M(l,l);
 MuX=M(l,1:l-1);
-F=-inv(Muu)*MuX;
+F=-inv(Muu)*MuX
 %Update iterative order number
 j=j+1;
-end
+%end
 
 
 
