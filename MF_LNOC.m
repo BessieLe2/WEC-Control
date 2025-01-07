@@ -43,7 +43,7 @@ C_X=[C_z*(A_init-eye(size(A_init))),C_z*B_w*D];
 F=-K;
 
 
-tolerance=1e-6;
+tolerance=1e-4;
 max_iter=1000;
 % %Method 2
 % tolerance = 1e-6;                      % Convergence threshold
@@ -78,11 +78,13 @@ max_iter=1000;
 H=eye(n_x+n_p);
 H=[-2.4677    0.0006    0.0001    0.0004; 0.0006   -0.2078   -0.0001   -0.0001;0.0001   -0.0001   -0.0000   -0.0000;0.0004   -0.0001   -0.0000   -0.0000]*1e3;
 H_prev=H+2;
-F=[0 -1 0 0];
-F=[82.2145  -66.0540    0.0153    0.0549];
+F=[0 -15 0 0];
+%F=[82.2145  -66.0540    0.0153    0.0549];
+F=  [81.2804 -65.2976 0.0148 0.0537];
 F_prev=F+2;
 iter=1;
-while (norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance )&&iter<max_iter
+while iter<max_iter&&(norm(F-F_prev,'fro')>tolerance||norm(H-H_prev,'fro')>tolerance)
+%while (norm(H-H_prev,'fro')>tolerance||norm(F-F_prev,'fro')>tolerance)&&iter<max_iter
     H_prev=H;
     F_prev=F;
     H=(A+B*F_prev)'*H_prev*(A+B*F_prev)+F_prev'*R*F_prev+2*F_prev'*C_X;
@@ -90,7 +92,7 @@ while (norm(H-H_prev,'fro')>tolerance ||norm(F-F_prev,'fro')>tolerance )&&iter<m
     iter=iter+1;
 end
 
-num_steps=1000;%Simulations steps
+num_steps=7000;%Simulations steps
 n_u=1;%Input number
 %Initialize xk, Xk and X_upper k+1
 X=zeros(n_x+n_p,num_steps);
@@ -124,8 +126,10 @@ error_history = zeros(N, 1);       % Store errors
     if j==1
         u_random=200*randn(num_steps+1,1);
     end
+    
 %Generate output Y and input Z for a iteration
 for k=1:num_steps
+    u_temp=50*randn();
     X(:,k)=[x(:,k);Wave(k:k+n_p-1)'];
     x(:,k+1)=A_init*x(:,k)+B_u*u(:,k)+B_w*Wave(k);
     X_upper(:,k+1)=[x(:,k+1);Wave(k+1:k+n_p-1)';0];
@@ -139,9 +143,8 @@ for k=1:num_steps
 %       z=[X(:,k);F0*X(:,k)];
 %       z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
 %    end 
-       u_temp=50*randn();
-       z=[X(:,k);u_temp];
-       z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
+      z=[X(:,k);u_temp];
+      z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
     %z=[X;FX],l=nx+np+1
     i=1;
         for p=1:l
@@ -152,15 +155,8 @@ for k=1:num_steps
         end
    %Generat Y
    Y(k,:)=0.5*(2*u_temp*C_X*X(:,k)+R*u_temp^2);
-end
-%Z = Z / norm(Z);%Normalize Z
-
-%fprintf("Output: %s\n", mat2str(Y));
-
-%RLS function
-for k = 1:N
-    % Create regression vector Z_k
-    Z_k = Z(:,k);
+  
+   Z_k = Z(:,k);
     
     % Update P_k+1
     K_k = (P * Z_k) /(lambda + Z_k' * P * Z_k); % Kalman gain
@@ -172,6 +168,17 @@ for k = 1:N
     % Store results
     Theta_history(k, :) = Theta';
     error_history(k) = prediction_error;
+    
+end
+plot(Theta_history)
+%Z = Z / norm(Z);%Normalize Z
+
+%fprintf("Output: %s\n", mat2str(Y));
+
+%RLS function
+for k = 1:N
+    % Create regression vector Z_k
+
 end
 
 
