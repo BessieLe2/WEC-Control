@@ -119,67 +119,86 @@ Theta = zeros(n_theta, 1); % Initial parameter estimates
 % Recursive Least Squares Implementation
 Theta_history = zeros(N, n_theta); % Store parameter estimates
 error_history = zeros(N, 1);       % Store errors
-%while (norm(M-M0,'fro')>tolerance || norm(F-F0,'fro')>tolerance)&&j<max_iter
-    M0=M;
-    F0=F;
-    %Generate random u at the first training epoch
-    if j==1
-        u_random=200*randn(num_steps+1,1);
-    end
-    
+
+%% initialisating simulation
+Nm = 7000;
+Nn = Nm;
+nx=n_x;
+Np=n_p;
+nu=n_u;
+xk=zeros(nx,1);
+% ww=wi(1:Np+1) ; % x0
+RecordX=zeros(nx,Nm);
+RecordU=zeros(1,Nm);
+RecordE=zeros(1,Nm);
+RecordP=zeros(1,Nm);
+ek = 0;
+RecordError = zeros(1,Nm);
+nthetaH = (Np+nu+nx)*(Np+nu+nx+1)/2;  
+RecordH = zeros(nthetaH,Nm);
+
+thetaH = zeros(nthetaH,1); % recursive LS
+PthetaH = 0.99*eye(nthetaH);
+lambda= 0.98;
+wi=Wave';
+%Kx =  [81.2804  -65.2976    0.0148    0.0537];
+Kx = -[0 15 zeros(1,Np)];
 %Generate output Y and input Z for a iteration
-for k=1:num_steps
-    u_temp=50*randn();
-    X(:,k)=[x(:,k);Wave(k:k+n_p-1)'];
-    x(:,k+1)=A_init*x(:,k)+B_u*u(:,k)+B_w*Wave(k);
-    X_upper(:,k+1)=[x(:,k+1);Wave(k+1:k+n_p-1)';0];
-    %Generate Z
-%    if j==1
-%        u_temp=u_random(k);
-%        z=[X(:,k);u_random(k)];
-%        z_upper=[X_upper(:,k+1);u_random(k+1)];
-%    else
-%       u_temp=F0*X(:,k);
-%       z=[X(:,k);F0*X(:,k)];
-%       z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
-%    end 
-      z=[X(:,k);u_temp];
-      z_upper=[X_upper(:,k+1);F0*X_upper(:,k+1)];
-    %z=[X;FX],l=nx+np+1
-    i=1;
-        for p=1:l
-            for q=p:l
-                Z(i,k)=z(p)*z(q)-z_upper(p)*z_upper(q);
-                i=i+1;
-            end
-        end
-   %Generat Y
-   Y(k,:)=0.5*(2*u_temp*C_X*X(:,k)+R*u_temp^2);
-  
-   Z_k = Z(:,k);
+for i=1:num_steps
     
-    % Update P_k+1
-    K_k = (P * Z_k) /(lambda + Z_k' * P * Z_k); % Kalman gain
-    P = (P / lambda) - K_k * Z_k' * P / lambda;
+    Xk = [xk;wi(i:Np+i-1)];
+%     uk = Kx*Xk;
+    uk = 50*rand();
+
+% denote current state for the calculation of energy
+    xkm1 = xk;
+
+    RecordX(:,i) = xk;
+    RecordU(:,i) = uk;
+
+% after this line, next step
+    xk=A_init*xk+B_u*uk+B_w*wi(i); % update states
+
+    Xkp1 = [xk;wi(i+1:Np+i)];
+    Xkp1k = [xk;wi(i+1:Np+i-1);0];
+
+% record energy and power
+%     pk = uk*Cz*(xkm1-xk)-R*uk^2;
+    pk = uk*C_z*(xkm1-xk)-0.5*R*uk^2;
+
+    %RecordP(:,i) = pk/ts;
+    ek = ek +pk;
+    RecordE(:,i) = ek;
+
+% Policy evaluation:
+    Lk = -pk; % stage cost
+    ukp1k = Kx*Xkp1k;
+
+   
+    Zkm1 = toZbar(Xk,uk);
+    Zk = toZbar(Xkp1k,Kx*Xkp1k);
     
-    % Update Theta_k+1
-    prediction_error = Y(k) - Z_k' * Theta;
-    Theta = Theta + P * Z_k * prediction_error;
-    % Store results
-    Theta_history(k, :) = Theta';
-    error_history(k) = prediction_error;
+    % (Zk-Zkm1)*thetaP = Lk  
+    NewY = Lk;
+    NewX = (Zk-Zkm1)';
+
+%% policy evaluation using Recursive LS
+    PthetaH = 1/lambda * PthetaH - 1/lambda * PthetaH*NewX'*inv(lambda+NewX*PthetaH*NewX')*NewX*PthetaH;
+    thetaH = thetaH + PthetaH*NewX'*(NewY-NewX*thetaH);
+    RecordH(:,i) = thetaH;
+    RecordError(:,i) = NewY-NewX*thetaH;
     
 end
-plot(Theta_history)
+plot(RecordError)
 %Z = Z / norm(Z);%Normalize Z
 
 %fprintf("Output: %s\n", mat2str(Y));
 
 %RLS function
-for k = 1:N
+%for k = 1:N
     % Create regression vector Z_k
 
-end
+%end
 
 
 %Update M and F
