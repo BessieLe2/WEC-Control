@@ -1,4 +1,4 @@
-function z_bar=toZbat(x,u)
+function z_bar=toZbar(x,u)
 z_=[x;u];
 z_bar=[];
 for i = 1:length(z_)

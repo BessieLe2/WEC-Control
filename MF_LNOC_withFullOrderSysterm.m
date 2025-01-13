@@ -59,25 +59,24 @@ Gamma=3.3;
 %wi=Wave'
 
 %% Stage cost parameter
-r=5*1e-3;
-
+r=1e-3;%5*1e-3;
+Rloc = r + 2*C_z*B_u;
 %% Simulation enviroment
 %xk+1=Axk+Buuk+Bwwk
 %zk=Czxk
 %vk=Cvxk
-C_z=[1 0 zeros(1,n_r)];
-C_v=[0 1 zeros(1,n_r)];
+%C_z=[1 0 zeros(1,n_r)];
+%C_v=[0 1 zeros(1,n_r)];
 %% Augmented system
 nx=2;
 np=2;
 nu=1;
 l=nx+np+1;
 ntheta=l*(l+1)/2;
- C_z=[1 0];
- C_v=[0 1];
+
 % Bu=Breduced;
 % Bw=Breduced;
-Rloc = r + 2*C_z*B_u;
+
 % Sx = Cz*(Areduced-eye(length(Areduced)));
 % Sw = Cz*Bw;
 % 
@@ -99,9 +98,9 @@ Rloc = r + 2*C_z*B_u;
 
 %% Initialisating simulation
 Nm = 7000;
-nxr=nx;
-xk=zeros(nxr,1);
-RecordX=zeros(nxr,Nm);
+%nxr=nx;
+xk=zeros(nx,1);
+RecordX=zeros(nx,Nm);
 RecordU=zeros(1,Nm);
 RecordE=zeros(1,Nm);
 RecordP=zeros(1,Nm);
@@ -114,56 +113,97 @@ lambda= 0.98;
 ZZ=zeros(ntheta,1);
 M=zeros(l);
 %F=[173.2 -136.9 -0.0147 -0.0552 0.0929 -0.0603 -0.0077];
-F=[0 -15 0 0];
-Rloc=0.0011
+F= -[0 15 zeros(1,np)];
+F=[81.2804  -65.2976    0.0148    0.0537];
 %% staring runing onlines
+A
 for j=1:5
 for i=1:Nm
-    Xk = [C_z*xk;C_v*xk;wi(i:np+i-1)];
-    uk = 50*rand();
-    %Record current input and state vector
-    xkm1 = xk;
-    RecordX(:,i) = xk;
-    RecordU(:,i) = uk;
-
-    %pk=Force(i)*Vel(i);
-    %RecordP(:,i) =pk;
-    %ek = ek +pk*ts;
+    % %Xk = [C_z*xk;C_v*xk;wi(i:np+i-1)];
+    % Xk = [xk;wi(i:np+i-1)];
+    % uk = 50*rand();
+    % %Record current input and state vector
+    % xkm1 = xk;
+    % RecordX(:,i) = xk;
+    % RecordU(:,i) = uk;
+    % 
+    % %pk=Force(i)*Vel(i);
+    % %RecordP(:,i) =pk;
+    % %ek = ek +pk*ts;
+    % % RecordE(:,i) = ek;
+    % %Caculate state at next step
+    % xk=A*xk+B_u*uk+B_w*wi(i); % update states
+    % %Xdkp1=[C_z*xk;C_v*xk;wi(i+1:np+i-1);0];
+    % Xdkp1=[xk;wi(i+1:np+i-1);0];
+    % % record energy and power
+    % 
+    % % Policy evaluation:
+    % %Lk = -pk; % stage cost
+    % %z=[Xk;uk];
+    % %z_upper=[Xdkp1;F*Xdkp1];
+    % %k=1;
+    % %for p=1:l
+    % %    for q=p:l
+    % %        ZZ(k)=z(p)*z(q)-z_upper(p)*z_upper(q);
+    % %        k=k+1;
+    % %    end
+    % %end
+    % % (Zk-Zkm1)*thetaP = Lk
+    % %NewY = Lk;
+    % %NewX = (Zk-Zkm1)';
+    % %NewX=ZZ';
+    % pk = uk*C_z*(xkm1-xk)-0.5*Rloc*uk^2;
+    % RecordP(:,i) = pk/ts;
+    % ek = ek +pk;
     % RecordE(:,i) = ek;
-    %Caculate state at next step
-    xk=A*xk+B_u*uk+B_w*wi(i); % update states
-    Xdkp1=[C_z*xk;C_v*xk;wi(i+1:np+i-1);0];
-    % record energy and power
-
-    % Policy evaluation:
-    %Lk = -pk; % stage cost
-    %z=[Xk;uk];
-    %z_upper=[Xdkp1;F*Xdkp1];
-    %k=1;
-    %for p=1:l
-    %    for q=p:l
-    %        ZZ(k)=z(p)*z(q)-z_upper(p)*z_upper(q);
-    %        k=k+1;
-    %    end
-    %end
-    % (Zk-Zkm1)*thetaP = Lk
+    % Lk=-pk;
+    % %Lk = pk*ts; % stage cost
+    % ukp1k = F*Xdkp1;
+    % Zkm1 = toZbar(Xk,uk);
+    % Zk = toZbar(Xdkp1,F*Xdkp1);
+    % 
+    % % (Zk-Zkm1)*thetaP = Lk
+    % NewY = Lk;
+    % NewX = (Zk-Zkm1)';
+        Xk = [xk;wi(i:np+i-1)];
+        uk = 50*rand();
+        %Record current input and state vector
+        xkm1 = xk;
+        RecordX(:,i) = xk;
+        RecordU(:,i) = uk;
+        %Caculate state at next step
+        xk=A*xk+B_u*uk+B_w*wi(i); % update states
+        Xdkp1=[xk;wi(i+1:np+i-1);0];
+      
+        % record energy and power
+        %     pk = uk*Cz*(xkm1-xk)-R*uk^2;
+        pk = uk*C_z*(xkm1-xk)-0.5*Rloc*uk^2;
+        RecordP(:,i) = pk/ts;
+        ek = ek +pk;
+        RecordE(:,i) = ek;
+        % Policy evaluation:
+        z=[Xk;uk];
+        z_upper=[Xdkp1;F*Xdkp1];
+        k=1;
+        for p=1:l
+            for q=p:l
+                ZZ(k)=z(p)*z(q)-z_upper(p)*z_upper(q);
+                k=k+1;
+            end
+        end
+    % (Zk-Zkm1)*thetaP = Lk  
     %NewY = Lk;
     %NewX = (Zk-Zkm1)';
-    %NewX=ZZ';
-    pk = uk*C_z*(xkm1-xk)-0.5*Rloc*uk^2;
-    RecordP(:,i) = pk/ts;
-    ek = ek +pk;
-    RecordE(:,i) = ek;
-    Lk=-pk;
-    %Lk = pk*ts; % stage cost
-    ukp1k = F*Xdkp1;
-    Zkm1 = toZbar(Xk,uk);
-    Zk = toZbar(Xdkp1,F*Xdkp1);
-
-    % (Zk-Zkm1)*thetaP = Lk
+    NewX=ZZ';
+        Lk = -pk; % stage cost
+    %ukp1k = F*Xdkp1;
+    %Zkm1 = toZbar(Xk,uk);
+    %Zk = toZbar(Xdkp1,F*Xdkp1);
+   
+     %Y=0.5*(2*uk*C_X*Xk+R*uk^2);
+    % (Zk-Zkm1)*thetaP = Lk  
     NewY = Lk;
-    NewX = (Zk-Zkm1)';
-
+    %NewX = (Zk-Zkm1)';
     %% policy evaluation using Recursive LS
     PthetaH = 1/lambda * PthetaH - 1/lambda * PthetaH*NewX'*inv(lambda+NewX*PthetaH*NewX')*NewX*PthetaH;
     thetaH = thetaH + PthetaH*NewX'*(NewY-NewX*thetaH);
@@ -172,33 +212,33 @@ for i=1:Nm
 end
     figure()
     plot(RecordError)
-     H = zeros(np+nu+nx);
-    nH = np+nu+nx;
-    Hvec = thetaH;        
-    pos = @(j)nH*(j)-(j)*(j-1)/2;
-    for j=1:nH  
-    
-        H(:,j) =  [zeros(j-1,1);Hvec(pos(j-1)+1:pos(j),1)];
-    end
-    H=(H'+H)/2;    
-    H=mat2cell(H,[nx+np,nu],[nx+np,nu]);
-    Huu=cell2mat(H(2,2));
-    Hux=cell2mat(H(2,1));
-    F=-inv(Huu)*Hux
+    %  H = zeros(np+nu+nx);
+    % nH = np+nu+nx;
+    % Hvec = thetaH;        
+    % pos = @(j)nH*(j)-(j)*(j-1)/2;
+    % for j=1:nH  
+    % 
+    %     H(:,j) =  [zeros(j-1,1);Hvec(pos(j-1)+1:pos(j),1)];
+    % end
+    % H=(H'+H)/2;    
+    % H=mat2cell(H,[nx+np,nu],[nx+np,nu]);
+    % Huu=cell2mat(H(2,2));
+    % Hux=cell2mat(H(2,1));
+    % F=-inv(Huu)*Hux
     %KXRE = [KXRE;Kx]
-    %order=0;
-    %for p=1:l
-    %    for q=p:l
-    %        order=order+1;
-    %        if p==q
-    %        M(p,q)=thetaH(order);
-    %       else
-    %        M(p,q)=0.5*thetaH(order);
-    %        M(q,p)=M(p,q);
-    %       end
-    %    end
-    %end
-%Muu=M(l,l);
-%MuX=M(l,1:l-1);
-%F=-inv(Muu)*MuX;
+    order=0;
+    for p=1:l
+       for q=p:l
+           order=order+1;
+           if p==q
+            M(p,q)=thetaH(order);
+           else
+            M(p,q)=0.5*thetaH(order);
+            M(q,p)=M(p,q);
+          end
+        end
+    end
+Muu=M(l,l);
+MuX=M(l,1:l-1);
+F=-inv(Muu)*MuX;
 end
